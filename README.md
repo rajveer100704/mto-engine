@@ -1,7 +1,5 @@
 # IsometricMTO — AI-Powered Material Take-Off Generator
 
-> **Pathnovo Full-Stack AI Engineer Internship Assessment**
-
 Upload a piping isometric drawing (PNG, JPG, or PDF) and receive a complete, engineer-validated **Material Take-Off (MTO)** in seconds. The AI pipeline is powered by **Google Gemini 2.5 Flash Vision**, with a deterministic **Engineering Rule Engine** for post-processing. No API key? The app runs with a clearly-labelled mock MTO.
 
 ---
@@ -356,5 +354,3 @@ In the results page, the **Extraction Report** panel will display:
 AI coding assistants (Gemini, Claude, ChatGPT, Cursor) were utilized during the development of this project to accelerate implementation, UI generation, and unit testing. Every design pattern (such as the provider abstraction and the decoupled engineering rule engine), component, and line of code has been thoroughly reviewed, understood, and validated to ensure reliability and engineering correctness.
 
 ---
-
-*Submitted for the Pathnovo Full-Stack AI Engineer Internship Assessment.*
