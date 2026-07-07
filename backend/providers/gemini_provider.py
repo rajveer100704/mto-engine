@@ -55,7 +55,7 @@ class GeminiVisionProvider(VisionExtractionProvider):
             "data": image_bytes,
         }
 
-        # Attempt up to 2 times to handle transient JSON parse errors
+        # Attempt up to 2 times to handle transient JSON parse errors and API anomalies
         for attempt in range(1, 3):
             try:
                 # Wrap blocking generate_content call in executor
@@ -73,7 +73,31 @@ class GeminiVisionProvider(VisionExtractionProvider):
                     )
                 )
 
-                raw_text = response.text.strip()
+                # 1. Safely check candidates
+                if not getattr(response, "candidates", None):
+                    raise ProviderError(self.name, "Gemini returned no candidates (response may have been blocked).")
+
+                candidate = response.candidates[0]
+                finish_reason_name = getattr(getattr(candidate, "finish_reason", None), "name", "UNKNOWN")
+
+                # Check finish reason before parsing
+                if finish_reason_name != "STOP":
+                    logger.warning(f"Generation candidate finished with reason: {finish_reason_name}")
+
+                # 2. Safely read response text
+                raw_text = ""
+                try:
+                    raw_text = response.text
+                except Exception as text_err:
+                    logger.error(f"Failed to read response.text: {text_err}")
+
+                if not raw_text:
+                    raise ProviderError(
+                        self.name,
+                        f"Gemini returned an empty response. Candidate finish reason: {finish_reason_name}"
+                    )
+
+                raw_text = raw_text.strip()
 
                 # Strip any accidental markdown fences
                 if raw_text.startswith("```"):
@@ -81,8 +105,18 @@ class GeminiVisionProvider(VisionExtractionProvider):
                     raw_text = raw_text.rsplit("```", 1)[0]
                     raw_text = raw_text.strip()
 
+                # 3. Parse JSON
                 data = json.loads(raw_text)
+
+                # 4. Verify basic schema structure to detect partial/truncated response
+                if not isinstance(data, dict) or "drawing_meta" not in data or "items" not in data:
+                    raise json.JSONDecodeError("Response JSON missing drawing_meta or items keys", raw_text, 0)
+
                 return data
+
+            except (AttributeError, TypeError, ValueError, NameError):
+                # Programming/type errors should fail immediately without retry to avoid obscuring bugs
+                raise
 
             except json.JSONDecodeError as e:
                 logger.error("=" * 80)
@@ -92,7 +126,7 @@ class GeminiVisionProvider(VisionExtractionProvider):
                 except Exception:
                     pass
                 logger.error("RAW TEXT RECEIVED:")
-                logger.error(raw_text)
+                logger.error(raw_text if 'raw_text' in locals() else "<no text retrieved>")
                 logger.error("=" * 80)
 
                 if attempt == 2:

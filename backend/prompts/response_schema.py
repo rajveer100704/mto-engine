@@ -4,7 +4,7 @@
 
 RESPONSE_SCHEMA = {
     "type": "object",
-    "required": ["drawing_meta", "items", "summary"],
+    "required": ["drawing_meta", "items"],
     "properties": {
         "drawing_meta": {
             "type": "object",
@@ -47,26 +47,13 @@ RESPONSE_SCHEMA = {
                 },
             },
         },
-        "summary": {
-            "type": "object",
-            "properties": {
-                "total_pipe_length_m": {"type": "number"},
-                "fittings": {"type": "integer"},
-                "flanges": {"type": "integer"},
-                "valves": {"type": "integer"},
-                "gaskets": {"type": "integer"},
-                "bolt_sets": {"type": "integer"},
-                "supports": {"type": "integer"},
-                "field_welds": {"type": "integer"},
-            },
-        },
     },
 }
 
 # User-turn prompt appended after the system instruction
 EXTRACTION_USER_PROMPT = (
     "Analyze this piping isometric drawing. "
-    "Extract ALL components visible and return the complete MTO JSON. "
+    "Extract ALL components visible and return the MTO JSON containing only 'drawing_meta' and 'items'. "
     "Include every pipe segment, fitting, flange, valve, gasket set, bolt set, and support. "
     "Do NOT omit items due to low confidence — include them with a low confidence score and a remark. "
     "Return ONLY the JSON object. No markdown fences. No commentary."
