@@ -6,6 +6,14 @@ Upload a piping isometric drawing (PNG, JPG, or PDF) and receive a complete, eng
 
 ---
 
+## Repository & Links
+
+* **GitHub Repository**: [https://github.com/rajveer100704/mto-engine](https://github.com/rajveer100704/mto-engine)
+* **Frontend Dev Stack**: Next.js 15, TypeScript, Tailwind CSS
+* **Backend Dev Stack**: FastAPI, Python 3.12, Pydantic v2
+
+---
+
 ## Screenshots
 
 | Upload Page | Processing Timeline | Results Dashboard |
