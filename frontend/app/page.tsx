@@ -2,7 +2,7 @@
 // =============================================================================
 // Upload Page — home screen with upload zone + processing timeline
 // =============================================================================
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Brain, FileDown, Shield } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -40,6 +40,7 @@ const ICON_COLORS: Record<string, string> = {
 export default function HomePage() {
   const router = useRouter();
   const { state, upload } = useUpload();
+  const [provider, setProvider] = useState<"gemini" | "mock">("mock");
 
   const isProcessing = state.phase === "polling" || state.phase === "uploading";
 
@@ -88,7 +89,63 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <UploadZone onFile={upload} disabled={isProcessing} />
+              {/* Provider Selection Radio Cards */}
+              <div className="mb-6">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                  AI Pipeline Engine
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setProvider("gemini")}
+                    className={[
+                      "flex items-start gap-3 p-4 rounded-xl border text-left transition-all cursor-pointer",
+                      provider === "gemini"
+                        ? "border-indigo-500 bg-indigo-50/50 ring-2 ring-indigo-500/20"
+                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                    ].join(" ")}
+                  >
+                    <div className="flex-shrink-0 mt-0.5">
+                      <span className={[
+                        "w-4 h-4 rounded-full border flex items-center justify-center",
+                        provider === "gemini" ? "border-indigo-500 text-indigo-500" : "border-slate-300"
+                      ].join(" ")}>
+                        {provider === "gemini" && <span className="w-2 h-2 rounded-full bg-indigo-500" />}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-sm font-semibold text-slate-800">Gemini 2.5 Flash</span>
+                      <span className="block text-xs text-slate-500 mt-0.5">Live Vision AI extraction from drawing</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setProvider("mock")}
+                    className={[
+                      "flex items-start gap-3 p-4 rounded-xl border text-left transition-all cursor-pointer",
+                      provider === "mock"
+                        ? "border-amber-500 bg-amber-50/40 ring-2 ring-amber-500/20"
+                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                    ].join(" ")}
+                  >
+                    <div className="flex-shrink-0 mt-0.5">
+                      <span className={[
+                        "w-4 h-4 rounded-full border flex items-center justify-center",
+                        provider === "mock" ? "border-amber-500 text-amber-500" : "border-slate-300"
+                      ].join(" ")}>
+                        {provider === "mock" && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-sm font-semibold text-slate-800">Mock Provider</span>
+                      <span className="block text-xs text-slate-500 mt-0.5">Offline interactive demo mode</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <UploadZone onFile={(file) => upload(file, provider)} disabled={isProcessing} />
               {state.phase === "error" && (
                 <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                   <strong>Error:</strong> {state.message}

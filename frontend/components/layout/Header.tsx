@@ -5,6 +5,8 @@
 import Link from "next/link";
 import { Activity } from "lucide-react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
@@ -27,7 +29,7 @@ export default function Header() {
             Powered by Gemini AI
           </a>
           <a
-            href="http://localhost:8000/docs"
+            href={`${API_BASE}/docs`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-slate-500 hover:text-indigo-600 transition-colors"

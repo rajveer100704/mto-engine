@@ -295,6 +295,21 @@ pytest tests/ -v
 
 ---
 
+## Runtime Provider Selection
+
+The application supports dual execution modes that can be toggled dynamically at upload time in the UI:
+
+1. **Gemini 2.5 Flash**: Send the drawing to Google Gemini for live Vision AI extraction.
+2. **Mock Provider**: Returns a realistic, pre-populated, verified MTO. Perfect for offline testing or evaluators running without an API key.
+
+### Graceful Fallback Mode
+If Gemini is selected but the backend doesn't have a `GOOGLE_API_KEY` configured, the **Provider Factory** automatically intercepts the request, redirects the job to use the Mock Provider, and logs a fallback notice. 
+
+In the results page, the **Extraction Report** panel will display:
+- **Active Provider**: Mock Provider
+- **Selection**: `Auto Fallback → Mock`
+- **Fallback Notice Banner**: Informing the user that the backend gracefully degraded to mock mode due to the missing API key.
+
 ## Performance & Scale
 
 - **Typical Processing Time**:

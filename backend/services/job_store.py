@@ -18,6 +18,8 @@ class Job:
     progress: int = 0
     current_step: str = "Queued"
     mock: bool = False
+    provider_requested: Optional[str] = None
+    fallback: bool = False
     created_at: float = field(default_factory=time.time)
     processing_time_ms: Optional[int] = None
     result: Optional[MTOResponse] = None

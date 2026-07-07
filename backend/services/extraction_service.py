@@ -24,7 +24,13 @@ class ExtractionService:
     keeping HTTP concerns separate from business logic.
     """
 
-    async def process_job(self, job: Job, file_bytes: bytes, content_type: str) -> None:
+    async def process_job(
+        self,
+        job: Job,
+        file_bytes: bytes,
+        content_type: str,
+        provider_override: Optional[str] = None,
+    ) -> None:
         """Run the full extraction pipeline, updating job state at each step."""
         start_time = time.time()
 
@@ -35,6 +41,7 @@ class ExtractionService:
                 status=JobStatus.PROCESSING,
                 progress=10,
                 current_step="Validating file",
+                provider_requested=provider_override,
             )
             await asyncio.sleep(0)  # yield to event loop
 
@@ -45,7 +52,16 @@ class ExtractionService:
 
             # --- Step 3: Create provider ---
             job_store.update(job.job_id, progress=40, current_step="Selecting AI provider")
-            provider, is_mock = create_provider()
+            from schemas.mto import ProviderType
+            override_enum = None
+            if provider_override:
+                try:
+                    override_enum = ProviderType(provider_override.lower())
+                except ValueError:
+                    pass
+
+            provider, is_mock = create_provider(override_enum)
+            fallback = (provider_override == "gemini" and is_mock)
 
             # --- Step 4: AI Extraction ---
             job_store.update(
@@ -53,12 +69,21 @@ class ExtractionService:
                 progress=55,
                 current_step=f"Running AI extraction ({provider.name})",
                 mock=is_mock,
+                fallback=fallback,
             )
             raw = await extract_mto_async(image, provider)
 
             # --- Step 5: Pydantic Validation ---
             job_store.update(job.job_id, progress=75, current_step="Validating & normalizing MTO")
-            mto_response = self._build_response(job.job_id, raw, provider.name, is_mock, start_time)
+            mto_response = self._build_response(
+                job.job_id,
+                raw,
+                provider.name,
+                is_mock,
+                start_time,
+                provider_requested=provider_override,
+                fallback=fallback,
+            )
 
             # --- Step 6: Complete ---
             elapsed_ms = int((time.time() - start_time) * 1000)
@@ -68,6 +93,7 @@ class ExtractionService:
                 progress=100,
                 current_step="MTO Generated",
                 mock=is_mock,
+                fallback=fallback,
                 processing_time_ms=elapsed_ms,
                 result=mto_response,
             )
@@ -90,6 +116,8 @@ class ExtractionService:
         provider_name: str,
         is_mock: bool,
         start_time: float,
+        provider_requested: Optional[str] = None,
+        fallback: bool = False,
     ) -> MTOResponse:
         """Validate raw dict against Pydantic models and build MTOResponse."""
 
@@ -123,6 +151,8 @@ class ExtractionService:
             average_confidence=round(avg_conf, 3),
             warnings=warnings,
             mock=is_mock,
+            provider_requested=provider_requested,
+            fallback=fallback,
         )
 
         return MTOResponse(

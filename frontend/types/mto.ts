@@ -49,6 +49,8 @@ export interface ExtractionMetrics {
   average_confidence: number;
   warnings: string[];
   mock: boolean;
+  provider_requested?: string;
+  fallback?: boolean;
 }
 
 export interface MTOResponse {
@@ -66,6 +68,8 @@ export interface JobStatusResponse {
   progress: number;
   current_step: string;
   mock: boolean;
+  provider_requested?: string;
+  fallback?: boolean;
   processing_time_ms: number | null;
   result: MTOResponse | null;
   error: string | null;

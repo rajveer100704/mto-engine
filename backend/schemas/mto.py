@@ -8,6 +8,11 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+class ProviderType(str, enum.Enum):
+    GEMINI = "gemini"
+    MOCK = "mock"
+
+
 class JobStatus(str, enum.Enum):
     PENDING = "pending"
     PROCESSING = "processing"
@@ -74,6 +79,8 @@ class ExtractionMetrics(BaseModel):
     average_confidence: float = Field(description="Mean confidence score 0-1")
     warnings: list[str] = Field(default_factory=list, description="Non-fatal warnings")
     mock: bool = Field(default=False, description="True if mock data was returned")
+    provider_requested: Optional[str] = Field(default=None, description="Requested provider type")
+    fallback: bool = Field(default=False, description="True if fallback occurred")
 
 
 class MTOResponse(BaseModel):
@@ -91,6 +98,8 @@ class JobStatusResponse(BaseModel):
     progress: int = Field(ge=0, le=100, description="Progress percentage 0-100")
     current_step: str = Field(default="", description="Human-readable current pipeline step")
     mock: bool = Field(default=False)
+    provider_requested: Optional[str] = Field(default=None)
+    fallback: bool = Field(default=False)
     processing_time_ms: Optional[int] = Field(default=None)
     result: Optional[MTOResponse] = Field(default=None, description="Set when status=completed")
     error: Optional[str] = Field(default=None, description="Set when status=failed")

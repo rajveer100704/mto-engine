@@ -30,14 +30,14 @@ export function useUpload() {
     setState({ phase: "idle" });
   }, []);
 
-  const upload = useCallback(async (file: File) => {
+  const upload = useCallback(async (file: File, provider?: string) => {
     stopPolling();
     setState({ phase: "uploading", uploadPct: 0 });
 
     try {
       const { job_id } = await uploadDrawing(file, (pct) => {
         setState({ phase: "uploading", uploadPct: pct });
-      });
+      }, provider);
 
       // Start polling
       setState({ phase: "polling", jobId: job_id, progress: 5, currentStep: "Queued", mock: false });

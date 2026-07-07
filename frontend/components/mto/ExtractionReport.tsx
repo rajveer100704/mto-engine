@@ -45,22 +45,48 @@ function Row({ icon, label, value }: RowProps) {
 export default function ExtractionReport({ metrics }: Props) {
   const executionSec = (metrics.processing_time_ms / 1000).toFixed(1);
 
+  const isMock = metrics.mock;
+  const activeBadgeColor = isMock
+    ? "bg-amber-100 text-amber-700 border-amber-200"
+    : "bg-emerald-100 text-emerald-700 border-emerald-200";
+  const activeBadgeIcon = isMock ? "🟠" : "🟢";
+
+  let selectionText = "Auto-selected";
+  if (metrics.provider_requested) {
+    const req = metrics.provider_requested.toLowerCase();
+    selectionText = req === "gemini" ? "User Selected Gemini" : "User Selected Mock";
+    if (metrics.fallback) {
+      selectionText = "Auto Fallback → Mock";
+    }
+  } else if (metrics.fallback) {
+    selectionText = "Auto Fallback → Mock";
+  }
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-slate-700">Extraction Report</h3>
-        {metrics.mock && (
-          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
-            MOCK
-          </span>
-        )}
+        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${activeBadgeColor}`}>
+          {activeBadgeIcon} {isMock ? "Mock" : "Gemini"}
+        </span>
       </div>
+
+      {metrics.fallback && (
+        <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+          <strong>Notice:</strong> Gemini requested but GOOGLE_API_KEY is not configured on the backend. Fell back to Mock.
+        </div>
+      )}
 
       <div className="space-y-0">
         <Row
           icon={<Cpu size={13} />}
-          label="Provider"
-          value={<span className="text-xs">{metrics.provider}</span>}
+          label="Active Provider"
+          value={<span className="text-xs font-semibold">{metrics.provider}</span>}
+        />
+        <Row
+          icon={<Cpu size={13} />}
+          label="Selection"
+          value={<span className="text-xs text-slate-500">{selectionText}</span>}
         />
         <Row
           icon={<Clock size={13} />}

@@ -32,10 +32,14 @@ async function handleResponse<T>(res: Response): Promise<T> {
  */
 export async function uploadDrawing(
   file: File,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  provider?: string
 ): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
+  if (provider) {
+    formData.append("provider", provider);
+  }
 
   // Use XMLHttpRequest for upload progress
   return new Promise((resolve, reject) => {
