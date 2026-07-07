@@ -37,7 +37,7 @@ RESPONSE_SCHEMA = {
                     "material_spec": {"type": "string"},
                     "end_type": {
                         "type": "string",
-                        "enum": ["BW", "SW", "THD", "FLGD", ""],
+                        "enum": ["BW", "SW", "THD", "FLGD", "UNKNOWN"],
                     },
                     "quantity": {"type": "number"},
                     "unit": {"type": "string", "enum": ["EA", "M", "SET", "NO"]},

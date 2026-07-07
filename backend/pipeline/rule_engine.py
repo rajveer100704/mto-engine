@@ -187,7 +187,7 @@ def _normalize_quantity(item: dict) -> dict:
 
 def _normalize_end_type(item: dict) -> dict:
     et = str(item.get("end_type", "")).upper().strip()
-    valid = {"BW", "SW", "THD", "FLGD", ""}
+    valid = {"BW", "SW", "THD", "FLGD", "", "UNKNOWN"}
     if et not in valid:
         aliases = {
             "BUTT WELD": "BW", "BUTTWELD": "BW",
@@ -196,6 +196,8 @@ def _normalize_end_type(item: dict) -> dict:
             "FLANGED": "FLGD", "FLANGE": "FLGD",
         }
         et = aliases.get(et, "BW")
+    if et == "UNKNOWN":
+        et = ""
     item["end_type"] = et
     return item
 
