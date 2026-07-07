@@ -51,30 +51,131 @@ RESPONSE_SCHEMA = {
 }
 
 # User-turn prompt appended after the system instruction
-EXTRACTION_USER_PROMPT = (
-    "You are an expert piping engineering AI. Analyze this piping isometric drawing step-by-step to extract a complete MTO:\n\n"
-    "Step 1: Read the drawing's title block and metadata. Look for the drawing number (e.g. 'ISO-1501-01' or 'XPRF-17'), "
-    "revision (e.g. '0', '1', 'A'), line number (e.g. '6\"-P-1501-A1A-IH' or '2\"-P-LOOP3-A1A'), nominal pipe size (NPS), piping material class "
-    "(e.g. 'A1A'), and service code.\n\n"
-    "Step 2: Identify every pipe segment on the isometric spool. Look for size markings (e.g. 6\", 2\") and dimension line lengths (e.g. 18.6m, 12.45m).\n\n"
-    "Step 3: Scan the drawing for all piping components. Identify:\n"
-    "- FITTINGS: Elbows (90 deg, 45 deg), Tees, Reducers (concentric, eccentric), Caps, Couplings.\n"
-    "- FLANGES: Weld neck flanges, Slip-on flanges, Blind flanges.\n"
-    "- VALVES: Gate, Globe, Check, Ball, Butterfly valves (note if they are flanged or butt-welded).\n"
-    "- SUPPORTS: Support tags or symbols (e.g. S-NO-xxx, shoes, hangers).\n\n"
-    "Step 4: Do NOT count or derive gaskets and bolt sets (the backend rule engine will derive them). Focus solely on extracting explicit drawing items.\n\n"
-    "Step 5: For each extracted item, specify:\n"
-    "- item_no: sequential index\n"
-    "- category: PIPE | FITTING | FLANGE | VALVE | GASKET | BOLT | SUPPORT\n"
-    "- description: full description (e.g. 'Elbow 90 Deg LR, BW, ASME B16.9')\n"
-    "- size_nps: size in inches (e.g. '6\"', '2\"')\n"
-    "- schedule_rating: schedule or rating (e.g. 'SCH 40', 'CL150')\n"
-    "- material_spec: ASTM grade if visible or leave empty\n"
-    "- end_type: BW | SW | THD | FLGD | UNKNOWN\n"
-    "- quantity: count or length\n"
-    "- unit: EA | M | SET | NO\n"
-    "- length_m: pipe segment length in meters (for PIPE items only)\n"
-    "- confidence: confidence score from 0.0 to 1.0\n"
-    "- remarks: any extra label or symbol information seen (e.g. 'CDU-II' or 'Tag V-101')\n\n"
-    "Step 6: Return ONLY a valid JSON object matching the requested schema. No markdown fences. No commentary."
-)
+EXTRACTION_USER_PROMPT = """Analyze this piping isometric drawing and extract a complete Material Take-Off.
+
+Carefully inspect the ENTIRE drawing before generating output.
+Do not stop after identifying the first few components.
+Zoom mentally into every region of the drawing.
+
+Read all callouts.
+Read all leader annotations.
+Read all dimensions.
+Read all symbols.
+Read all balloons.
+Read all pipe labels.
+Read all valve tags.
+Read all fitting symbols.
+Read all flange symbols.
+Read all reducers.
+Read all branch connections.
+Read all support symbols.
+Read all weld symbols.
+Read all continuation arrows.
+Read all elevation markers.
+Read every pipeline segment individually.
+
+Every visible engineering object should become one MTO item.
+
+Extract at minimum:
+
+PIPE
+- straight pipe
+- spool pieces
+- pipe segments
+
+FITTING
+- elbows
+- tees
+- crosses
+- reducers
+- concentric reducers
+- eccentric reducers
+- caps
+- couplings
+- unions
+
+FLANGE
+- weld neck
+- slip-on
+- socket weld
+- blind
+- threaded
+
+VALVE
+- gate
+- globe
+- check
+- ball
+- butterfly
+- plug
+- control
+
+SUPPORT
+- shoes
+- guides
+- hangers
+- spring supports
+- clamps
+
+GASKET
+
+BOLT SET
+
+For each item extract whenever visible:
+- item_no
+- category (PIPE | FITTING | FLANGE | VALVE | GASKET | BOLT | SUPPORT)
+- description
+- size_nps
+- schedule_rating
+- material_spec
+- end_type
+- quantity
+- unit
+- length_m
+- confidence
+- remarks
+
+If length cannot be determined:
+set length_m = 0
+
+If schedule cannot be read:
+return ""
+
+If material specification cannot be read:
+return ""
+
+If end type cannot be read:
+return ""
+
+If quantity is uncertain:
+estimate conservatively and reduce confidence.
+
+Confidence Guidelines:
+1.00 - Clearly visible and explicitly labeled.
+0.90 - Clearly identifiable with readable annotation.
+0.80 - Recognizable engineering symbol.
+0.70 - Likely present but partially obscured.
+0.50 - Visible but uncertain.
+
+Never omit an item because confidence is low.
+Unknown values should be empty strings instead of invented values.
+
+Return ONLY one JSON object.
+The JSON must strictly contain:
+{
+    "drawing_meta": {...},
+    "items": [...]
+}
+
+Do NOT include:
+- summary
+- metrics
+- warnings
+- provider
+- execution_time
+- analysis
+- thoughts
+- markdown
+- comments
+
+Only return valid JSON."""
