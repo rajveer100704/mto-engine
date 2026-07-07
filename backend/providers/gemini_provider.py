@@ -9,6 +9,7 @@ import json
 import logging
 import os
 
+from google.api_core.exceptions import GoogleAPIError
 import google.generativeai as genai
 from PIL import Image
 
@@ -80,9 +81,15 @@ class GeminiVisionProvider(VisionExtractionProvider):
                 candidate = response.candidates[0]
                 finish_reason_name = getattr(getattr(candidate, "finish_reason", None), "name", "UNKNOWN")
 
-                # Check finish reason before parsing
-                if finish_reason_name != "STOP":
-                    logger.warning(f"Generation candidate finished with reason: {finish_reason_name}")
+                # Get token count usage metadata
+                usage = getattr(response, "usage_metadata", None)
+                tokens = getattr(usage, "total_token_count", "unknown") if usage else "unknown"
+
+                # Log detailed API request stats
+                logger.info(
+                    f"Gemini API Call: attempt={attempt} finish_reason={finish_reason_name} "
+                    f"provider=gemini model={self.MODEL_ID} tokens={tokens}"
+                )
 
                 # 2. Safely read response text
                 raw_text = ""
@@ -118,9 +125,10 @@ class GeminiVisionProvider(VisionExtractionProvider):
                 # Programming/type errors should fail immediately without retry to avoid obscuring bugs
                 raise
 
-            except json.JSONDecodeError as e:
+            except (json.JSONDecodeError, GoogleAPIError) as e:
+                # Catch and retry only JSON parsing and Google API errors
                 logger.error("=" * 80)
-                logger.error(f"Attempt {attempt} failed to parse JSON from Gemini: {e}")
+                logger.error(f"Attempt {attempt} failed due to transient API/parsing error: {e}")
                 try:
                     logger.error(f"Finish Reason: {response.candidates[0].finish_reason}")
                 except Exception:
@@ -130,10 +138,10 @@ class GeminiVisionProvider(VisionExtractionProvider):
                 logger.error("=" * 80)
 
                 if attempt == 2:
-                    raise ProviderError(self.name, f"Invalid JSON from Gemini after retry: {e}") from e
+                    raise ProviderError(self.name, f"Invalid JSON or API error from Gemini after retry: {e}") from e
 
             except Exception as e:
-                logger.error(f"Attempt {attempt} failed with Gemini API error: {e}")
-                if attempt == 2:
-                    raise ProviderError(self.name, f"Gemini API error: {e}") from e
+                # Any other unexpected exception fails immediately
+                logger.error(f"Unretryable failure on attempt {attempt}: {e}")
+                raise ProviderError(self.name, f"Gemini provider failure: {e}") from e
 
