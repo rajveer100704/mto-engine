@@ -112,8 +112,18 @@ class GeminiVisionProvider(VisionExtractionProvider):
                     raw_text = raw_text.rsplit("```", 1)[0]
                     raw_text = raw_text.strip()
 
-                # 3. Parse JSON
-                data = json.loads(raw_text)
+                # 3. Parse JSON (with fallback to json-repair for robustness)
+                try:
+                    data = json.loads(raw_text)
+                except json.JSONDecodeError as parse_err:
+                    logger.warning(f"Initial json.loads failed: {parse_err}. Attempting automatic json-repair fallback.")
+                    from json_repair import repair_json
+                    repaired_text = repair_json(raw_text)
+                    try:
+                        data = json.loads(repaired_text)
+                    except Exception:
+                        # Raise the original parse error if repair also fails
+                        raise parse_err
 
                 # 4. Verify basic schema structure to detect partial/truncated response
                 if not isinstance(data, dict) or "drawing_meta" not in data or "items" not in data:
